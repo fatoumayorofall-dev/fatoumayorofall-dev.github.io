@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ERP de démonstration · Fatoumata Fall</title>
+<meta name="description" content="ERP de démonstration conçu par Fatoumata Fall : ventes, stock, caisse, clients, livraisons et copilote. Entreprise fictive, données de test.">
+<meta name="robots" content="noindex">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<style>
+/* Mise en page : barre latérale de modules, zone de travail, journal des effets à droite (en bas sur téléphone) */
+:root {
+  --bg: #f3f5f8; --surface: #ffffff; --ink: #121a2c; --muted: #5b6479; --line: #e0e4eb;
+  --accent: #e9a21b; --accent-ink: #8f5c00; --accent-soft: #fdf1d8;
+  --ok: #136a50; --ok-soft: #e3f2ec; --bad: #b0392b; --bad-soft: #fbe8e5; --info: #2f5fb3; --info-soft: #e7eefb;
+  --side: #0f1729; --side-ink: #e8ecf4; --side-muted: #9aa4ba;
+  --font: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #0c1220; --surface: #141c2e; --ink: #eef1f7; --muted: #9aa4ba; --line: #253049;
+    --accent: #f2b23a; --accent-ink: #f5c25e; --accent-soft: #2a2412; --ok: #4fc39b; --ok-soft: #12291f;
+    --bad: #f08b7a; --bad-soft: #2d1714; --info: #8db2f5; --info-soft: #16233d; --side: #080d18; color-scheme: dark; }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--bg); color: var(--ink); font: 14.5px/1.5 var(--font); -webkit-font-smoothing: antialiased; }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+.banner { background: var(--accent); color: #121a2c; font-size: 13px; font-weight: 600; text-align: center; padding: 6px max(12px, env(safe-area-inset-left, 0px)); }
+.banner a { color: inherit; }
+.app { display: grid; grid-template-columns: 228px minmax(0, 1fr) 300px; min-height: calc(100% - 32px); }
+aside.nav { background: var(--side); color: var(--side-ink); padding: 18px 12px; display: flex; flex-direction: column; gap: 4px; }
+.brand { display: flex; gap: 10px; align-items: center; padding: 4px 8px 16px; }
+.brand i { width: 34px; height: 34px; border-radius: 9px; background: var(--accent); display: grid; place-items: center; font-style: normal; font-weight: 800; color: #121a2c; }
+.brand b { display: block; font-size: 14px; } .brand small { color: var(--side-muted); font-size: 11.5px; }
+.nav button { display: flex; gap: 10px; align-items: center; width: 100%; text-align: left; background: none; border: 0; color: var(--side-muted); padding: 9px 10px; border-radius: 9px; font-weight: 600; }
+.nav button:hover { color: var(--side-ink); background: rgba(255,255,255,.05); }
+.nav button[aria-current="page"] { color: #121a2c; background: var(--accent); }
+.nav button svg { width: 18px; height: 18px; flex-shrink: 0; }
+.nav .foot { margin-top: auto; padding: 12px 8px 0; font-size: 12px; color: var(--side-muted); }
+.nav .foot button { color: var(--side-ink); background: rgba(255,255,255,.07); justify-content: center; margin-top: 8px; }
+main { padding: 22px 24px 40px; min-width: 0; }
+h1 { font-size: 22px; margin: 0 0 4px; letter-spacing: -.01em; }
+.sub { color: var(--muted); margin: 0 0 18px; }
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+.kpi { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; min-width: 0; }
+.kpi span { font-size: 12.5px; color: var(--muted); }
+.kpi b { display: block; font-size: 21px; letter-spacing: -.02em; font-variant-numeric: tabular-nums; margin-top: 2px; }
+.kpi.warn b { color: var(--bad); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-bottom: 14px; min-width: 0; }
+.card h2 { font-size: 15px; margin: 0 0 12px; display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+.row2 { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 14px; }
+.tbl { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 8px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { font-size: 12px; color: var(--muted); font-weight: 600; }
+td.n, th.n { text-align: right; }
+.pill { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
+.pill.ok { background: var(--ok-soft); color: var(--ok); } .pill.bad { background: var(--bad-soft); color: var(--bad); }
+.pill.warn { background: var(--accent-soft); color: var(--accent-ink); } .pill.info { background: var(--info-soft); color: var(--info); }
+.btn { border: 1px solid var(--line); background: var(--surface); padding: 8px 14px; border-radius: 10px; font-weight: 600; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #121a2c; }
+.btn.dark { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+.btn.sm { padding: 4px 10px; font-size: 12.5px; border-radius: 8px; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+form.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+label { display: grid; gap: 4px; font-size: 12.5px; font-weight: 600; color: var(--muted); }
+input, select { border: 1px solid var(--line); background: var(--bg); border-radius: 9px; padding: 9px 10px; width: 100%; min-width: 0; }
+.full { grid-column: 1 / -1; }
+.msg { border-radius: 10px; padding: 10px 12px; font-size: 13.5px; margin-top: 10px; }
+.msg.bad { background: var(--bad-soft); color: var(--bad); } .msg.ok { background: var(--ok-soft); color: var(--ok); } .msg.warn { background: var(--accent-soft); color: var(--accent-ink); }
+.total { display: flex; justify-content: space-between; align-items: baseline; background: var(--bg); border-radius: 10px; padding: 10px 12px; }
+.total b { font-size: 20px; color: var(--accent-ink); font-variant-numeric: tabular-nums; }
+.bars { display: flex; align-items: flex-end; gap: 8px; height: 150px; padding-top: 8px; }
+.bars div { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
+.bars i { width: 100%; max-width: 38px; background: var(--accent); border-radius: 6px 6px 2px 2px; min-height: 2px; }
+.bars i.today { background: var(--ok); }
+.bars small { font-size: 11px; color: var(--muted); }
+.journal { border-left: 1px solid var(--line); background: var(--surface); padding: 20px 16px; min-width: 0; }
+.journal h2 { font-size: 14px; margin: 0 0 4px; }
+.journal p.hint { font-size: 12.5px; color: var(--muted); margin: 0 0 12px; }
+.ev { border-left: 3px solid var(--accent); padding: 6px 10px; margin-bottom: 10px; background: var(--bg); border-radius: 0 8px 8px 0; animation: pop .35s ease; }
+.ev b { font-size: 13px; display: block; }
+.ev ul { margin: 4px 0 0; padding-left: 16px; font-size: 12.5px; color: var(--muted); }
+.ev time { font: 11px var(--mono); color: var(--muted); }
+@keyframes pop { from { transform: translateY(-6px); opacity: .3; } to { transform: none; opacity: 1; } }
+.wa { white-space: pre-wrap; background: var(--ok-soft); border-radius: 10px; padding: 10px 12px; font-size: 13px; margin: 8px 0; }
+.steps { display: flex; gap: 6px; flex-wrap: wrap; }
+.steps span { font-size: 11.5px; padding: 2px 8px; border-radius: 999px; background: var(--bg); color: var(--muted); border: 1px solid var(--line); }
+.steps span.on { background: var(--ok-soft); color: var(--ok); border-color: transparent; font-weight: 700; }
+.chat { display: flex; flex-direction: column; gap: 10px; max-height: 420px; overflow-y: auto; padding: 4px; }
+.bubble { max-width: 85%; padding: 10px 12px; border-radius: 12px; font-size: 13.5px; }
+.bubble.me { align-self: flex-end; background: var(--ink); color: var(--bg); border-bottom-right-radius: 4px; }
+.bubble.ai { align-self: flex-start; background: var(--bg); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+.chips button { border: 1px solid var(--line); background: var(--bg); border-radius: 999px; padding: 5px 11px; font-size: 12.5px; }
+.ask { display: flex; gap: 8px; }
+.muted { color: var(--muted); }
+.modal { position: fixed; inset: 0; background: rgba(8, 12, 24, .55); display: grid; place-items: center; padding: 16px; z-index: 30; }
+.sheet { background: #fff; color: #121a2c; width: min(620px, 100%); max-height: 90vh; overflow: auto; border-radius: 12px; padding: 28px; font-size: 13.5px; }
+.sheet h3 { margin: 0; font-size: 20px; } .sheet table th { color: #586179; } .sheet td, .sheet th { border-color: #e0e4eb; }
+@media (max-width: 1180px) { .app { grid-template-columns: 210px minmax(0, 1fr); } .journal { grid-column: 1 / -1; border-left: 0; border-top: 1px solid var(--line); } }
+@media (max-width: 760px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  aside.nav { flex-direction: row; overflow-x: auto; padding: 8px max(8px, env(safe-area-inset-left, 0px)); gap: 4px; position: sticky; top: 0; z-index: 10; }
+  .brand, .nav .foot { display: none; }
+  .nav button { width: auto; white-space: nowrap; padding: 8px 10px; }
+  main { padding: 16px max(16px, env(safe-area-inset-left, 0px)) 24px; }
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .row2, form.grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) { .ev { animation: none; } }
+</style>
+</head>
+<body>
+<div class="banner">Démonstration · entreprise fictive et données de test · conçue par <a href="../">Fatoumata Fall</a> · vos saisies restent dans votre navigateur</div>
+<div class="app">
+  <aside class="nav" aria-label="Modules">
+    <div class="brand"><i>B</i><div><b>BTP Démo SARL</b><small>ERP de démonstration</small></div></div>
+    <nav id="nav"></nav>
+    <div class="foot">Toutes les données sont fictives.<button type="button" class="btn" id="reset">Remettre les données à zéro</button></div>
+  </aside>
+  <main id="view"></main>
+  <section class="journal" aria-live="polite">
+    <h2>Une saisie, tous ses effets</h2>
+    <p class="hint">Chaque action enregistrée ici montre ce que l’ERP a mis à jour tout seul.</p>
+    <div id="journal"></div>
+  </section>
+</div>
+<div id="modal"></div>
+
+<script>
+(function () {
+  'use strict';
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const fcfa = (n) => Math.round(n).toLocaleString('fr-FR').replace(/[  ]/g, ' ') + ' FCFA';
+  const num = (n) => (Math.round(n * 10) / 10).toLocaleString('fr-FR').replace(/[  ]/g, ' ');
+  const today = () => new Date().toISOString().slice(0, 10);
+  const daysAgo = (d) => { const x = new Date(); x.setDate(x.getDate() - d); return x.toISOString().slice(0, 10); };
+  const now = () => new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  const uid = (p) => p + '-' + Math.random().toString(36).slice(2, 7).toUpperCase();
+
+  // ── Données de test ───────────────────────────────────────────────────────
+  const TYPES = {
+    occasionnel: { label: 'Occasionnel', credit: false, delai: 0 },
+    regulier: { label: 'Régulier', credit: true, delai: 15 },
+    revendeur: { label: 'Revendeur', credit: true, delai: 7, remise: 5 },
+  };
+  function seed() {
+    const products = [
+      { id: 'P1', name: 'Basalte 3/8', unit: 't', price: 14000, stock: 420, min: 80 },
+      { id: 'P2', name: 'Basalte 8/16', unit: 't', price: 14000, stock: 95, min: 100 },
+      { id: 'P3', name: 'Silex 0/3', unit: 't', price: 12500, stock: 310, min: 60 },
+      { id: 'P4', name: 'Sable de dune', unit: 't', price: 7500, stock: 260, min: 50 },
+      { id: 'P5', name: 'Ciment CEM II (sac 50 kg)', unit: 'sac', price: 4300, stock: 35, min: 50 },
+    ];
+    const customers = [
+      { id: 'C1', name: 'Chantier Horizon', phone: '77 000 00 01', type: 'regulier', limit: 2000000, debt: 0, due: null },
+      { id: 'C2', name: 'BTP Sahel (démo)', phone: '77 000 00 02', type: 'revendeur', limit: 5000000, debt: 1450000, due: daysAgo(4) },
+      { id: 'C3', name: 'Résidence Les Filaos', phone: '77 000 00 03', type: 'regulier', limit: 1500000, debt: 1380000, due: daysAgo(-6) },
+      { id: 'C4', name: 'Client comptoir', phone: '77 000 00 04', type: 'occasionnel', limit: 0, debt: 0, due: null },
+      { id: 'C5', name: 'Atelier Baobab (démo)', phone: '77 000 00 05', type: 'regulier', limit: 1000000, debt: 0, due: null, inactive: 46 },
+    ];
+    const sales = []; const cash = [];
+    const hist = [[6, 'C1', 'P1', 30, 'wave'], [5, 'C3', 'P3', 22, 'credit'], [4, 'C2', 'P2', 40, 'credit'], [3, 'C4', 'P4', 8, 'cash'], [2, 'C1', 'P3', 18, 'om'], [1, 'C2', 'P1', 35, 'credit'], [1, 'C4', 'P5', 20, 'cash'], [0, 'C1', 'P3', 16, 'wave'], [0, 'C4', 'P4', 6, 'cash']];
+    hist.forEach(([d, c, p, q, pay], i) => {
+      const pr = products.find((x) => x.id === p); const total = q * pr.price; const paid = pay === 'credit' ? 0 : total;
+      const s = { id: 'V-' + (1001 + i), date: daysAgo(d), customer: c, product: p, qty: q, total, paid, pay };
+      sales.push(s); if (paid) cash.push({ id: uid('E'), date: s.date, type: 'Entrée', label: 'Encaissement ' + s.id, method: pay, amount: paid, auto: true });
+    });
+    cash.push({ id: uid('S'), date: daysAgo(2), type: 'Sortie', label: 'Carburant camion', method: 'cash', amount: 65000, auto: false });
+    const deliveries = [
+      { id: 'L-301', sale: 'V-1006', site: 'Chantier à Rufisque', step: 3, code: '4827', tries: 0, locked: 0 },
+      { id: 'L-302', sale: 'V-1005', site: 'Chantier à Diamniadio', step: 2, code: '1593', tries: 0, locked: 0 },
+    ];
+    return { products, customers, sales, cash, deliveries, journal: [], seq: 1010, version: 1 };
+  }
+  let db;
+  const KEY = 'demo-erp-btp-v1';
+  try { db = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { db = null; }
+  if (!db || db.version !== 1) db = seed();
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch (e) { /* navigation privée : pas d'enregistrement */ } };
+  const P = (id) => db.products.find((x) => x.id === id);
+  const C = (id) => db.customers.find((x) => x.id === id);
+  const PAY = { cash: 'Espèces', wave: 'Wave', om: 'Orange Money', credit: 'À crédit' };
+
+  function log(title, effects) { db.journal.unshift({ t: now(), title, effects }); db.journal = db.journal.slice(0, 30); save(); renderJournal(); }
+  function renderJournal() {
+    $('#journal').innerHTML = db.journal.length ? db.journal.map((e) => `<div class="ev"><time>${e.t}</time><b>${esc(e.title)}</b><ul>${e.effects.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>`).join('')
+      : '<p class="muted" style="font-size:13px">Rien pour l’instant. Enregistrez une vente dans « Ventes » : le stock, la caisse, le compte client et le tableau de bord se mettront à jour ici.</p>';
+  }
+
+  // ── Règles ────────────────────────────────────────────────────────────────
+  function saleCheck(c, total, paid) {
+    const t = TYPES[c.type]; const rest = total - paid;
+    if (rest > 0 && !t.credit) return { block: `Un client ${t.label.toLowerCase()} paie comptant : pas de crédit possible.` };
+    if (rest > 0 && c.debt + rest > c.limit) return { block: `Plafond dépassé : dette ${fcfa(c.debt)} + ${fcfa(rest)} > plafond ${fcfa(c.limit)}.` };
+    if (rest > 0 && c.due && c.due < today()) return { warn: 'Ce client a une échéance dépassée : vente possible, relance conseillée.' };
+    return {};
+  }
+  function reminders() {
+    const out = [];
+    db.customers.forEach((c) => {
+      if (c.debt > 0 && c.due && c.due < today()) {
+        const late = Math.round((new Date(today()) - new Date(c.due)) / 864e5);
+        out.push({ c, kind: late > 7 ? '2e relance' : '1re relance', tone: 'bad', msg: `Bonjour ${c.name}, votre solde de ${fcfa(c.debt)} est échu depuis ${late} jour(s). Merci de régulariser par Wave, Orange Money ou au dépôt. — BTP Démo SARL` });
+      } else if (c.debt > 0 && c.due && c.due >= today()) {
+        out.push({ c, kind: 'Rappel d’échéance', tone: 'warn', msg: `Bonjour ${c.name}, petit rappel : ${fcfa(c.debt)} à régler avant le ${new Date(c.due).toLocaleDateString('fr-FR')}. Merci ! — BTP Démo SARL` });
+      }
+      if (c.limit && c.debt >= c.limit * 0.8) out.push({ c, kind: 'Plafond presque atteint', tone: 'warn', msg: `Bonjour ${c.name}, votre encours atteint ${Math.round((c.debt / c.limit) * 100)} % de votre plafond. Un règlement permettra de continuer vos commandes. — BTP Démo SARL` });
+      if (c.inactive) out.push({ c, kind: 'Client à relancer', tone: 'info', msg: `Bonjour ${c.name}, cela fait ${c.inactive} jours ! Nos prix du jour sont disponibles, répondez à ce message pour un devis. — BTP Démo SARL` });
+    });
+    return out;
+  }
+
+  // ── Vues ──────────────────────────────────────────────────────────────────
+  const ICONS = {
+    dash: '<path d="M3 13h8V3H3zM13 21h8V11h-8zM3 21h8v-6H3zM13 3v6h8V3z"/>', sales: '<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4zM3 6h18M16 10a4 4 0 0 1-8 0"/>',
+    customers: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+    stock: '<path d="M21 16V8l-9-5-9 5v8l9 5zM3.3 7 12 12l8.7-5M12 22V12"/>', cash: '<path d="M2 6h20v12H2zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6M6 12h.01M18 12h.01"/>',
+    deliveries: '<path d="M1 3h15v13H1zM16 8h4l3 3v5h-7zM5.5 21a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5M18.5 21a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5"/>',
+    copilot: '<path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15.5l-1.9-4.6L5.5 9l4.6-1.4zM19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9z"/>',
+  };
+  const VIEWS = [['dash', 'Tableau de bord'], ['sales', 'Ventes'], ['customers', 'Clients'], ['stock', 'Stock'], ['cash', 'Caisse'], ['deliveries', 'Livraisons'], ['copilot', 'Copilote']];
+  const chatLog = [{ html: 'Bonjour 👋 Posez-moi une question sur l’activité, ou demandez-moi une action.', me: false }];
+  let view = (location.hash || '#dash').slice(1); if (!VIEWS.some((v) => v[0] === view)) view = 'dash';
+  function nav() {
+    $('#nav').innerHTML = VIEWS.map(([id, l]) => `<button type="button" data-v="${id}" ${id === view ? 'aria-current="page"' : ''}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[id]}</svg>${l}</button>`).join('');
+  }
+  $('#nav').addEventListener('click', (e) => { const b = e.target.closest('[data-v]'); if (!b) return; view = b.dataset.v; history.replaceState(null, '', '#' + view); render(); });
+
+  function stats() {
+    const t = today(); const sToday = db.sales.filter((s) => s.date === t);
+    return {
+      ca: sToday.reduce((a, s) => a + s.total, 0),
+      cashIn: db.cash.filter((c) => c.date === t && c.type === 'Entrée').reduce((a, c) => a + c.amount, 0),
+      due: db.customers.reduce((a, c) => a + c.debt, 0),
+      low: db.products.filter((p) => p.stock < p.min),
+      tons: sToday.filter((s) => P(s.product).unit === 't').reduce((a, s) => a + s.qty, 0),
+    };
+  }
+  const V = {};
+  V.dash = () => {
+    const s = stats(); const days = [...Array(7)].map((_, i) => daysAgo(6 - i));
+    const vals = days.map((d) => db.sales.filter((x) => x.date === d).reduce((a, x) => a + x.total, 0)); const max = Math.max(...vals, 1);
+    const rem = reminders();
+    return `<h1>Tableau de bord</h1><p class="sub">Les chiffres se mettent à jour à chaque saisie, sans ressaisie.</p>
+    <div class="kpis"><div class="kpi"><span>Ventes du jour</span><b>${fcfa(s.ca)}</b></div><div class="kpi"><span>Encaissé aujourd’hui</span><b>${fcfa(s.cashIn)}</b></div>
+    <div class="kpi"><span>Reste à encaisser</span><b>${fcfa(s.due)}</b></div><div class="kpi ${s.low.length ? 'warn' : ''}"><span>Articles sous le seuil</span><b>${s.low.length}</b></div></div>
+    <div class="row2"><div class="card"><h2>Ventes des 7 derniers jours</h2><div class="bars">${vals.map((v, i) => `<div><small>${v ? Math.round(v / 1000) + ' k' : ''}</small><i class="${i === 6 ? 'today' : ''}" style="height:${Math.max(2, (v / max) * 110)}px"></i><small>${new Date(days[i]).toLocaleDateString('fr-FR', { weekday: 'short' })}</small></div>`).join('')}</div></div>
+    <div class="card"><h2>Points à traiter</h2>${s.low.map((p) => `<p>📦 <b>${esc(p.name)}</b> : ${num(p.stock)} ${p.unit} (seuil ${p.min})</p>`).join('')}
+    ${rem.slice(0, 3).map((r) => `<p>💬 <b>${esc(r.c.name)}</b> : ${esc(r.kind)}</p>`).join('')}
+    <p><button class="btn sm" data-go="customers">Voir les relances</button> <button class="btn sm primary" data-go="sales">Nouvelle vente</button></p></div></div>`;
+  };
+  V.sales = () => {
+    const opts = (arr, f) => arr.map(f).join('');
+    return `<h1>Ventes</h1><p class="sub">Les règles du type de client sont vérifiées avant d’enregistrer.</p>
+    <div class="row2"><div class="card"><h2>Nouvelle vente</h2><form class="grid" id="saleForm">
+      <label>Client<select id="f-c">${opts(db.customers, (c) => `<option value="${c.id}">${esc(c.name)} · ${TYPES[c.type].label}</option>`)}</select></label>
+      <label>Article<select id="f-p">${opts(db.products, (p) => `<option value="${p.id}">${esc(p.name)} · ${fcfa(p.price)}/${p.unit}</option>`)}</select></label>
+      <label>Quantité<input id="f-q" type="number" min="1" step="1" value="20"></label>
+      <label>Paiement<select id="f-pay">${Object.entries(PAY).map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select></label>
+      <label class="full" id="f-paid-l" hidden>Acompte versé (FCFA)<input id="f-paid" type="number" min="0" step="1000" value="0"></label>
+      <div class="full total"><span id="f-detail" class="muted"></span><b id="f-total"></b></div>
+      <div class="full" id="f-msg"></div>
+      <div class="full"><button class="btn primary" type="submit">Enregistrer la vente</button></div></form></div>
+    <div class="card"><h2>Ce qui va se passer</h2><ul class="muted" style="margin:0;padding-left:18px">
+      <li>le stock de l’article baisse ;</li><li>l’encaissement entre en caisse (s’il y a paiement) ;</li><li>la dette du client augmente (s’il y a crédit) ;</li><li>une livraison est créée avec un code de remise ;</li><li>le tableau de bord se met à jour.</li></ul>
+      <p class="muted" style="font-size:12.5px">Essayez : vente à crédit pour « Client comptoir » (refusée), ou 120 t pour « Résidence Les Filaos » (plafond).</p></div></div>
+    <div class="card"><h2>Dernières ventes</h2><div class="tbl"><table><thead><tr><th>N°</th><th>Date</th><th>Client</th><th>Article</th><th class="n">Qté</th><th class="n">Total TTC</th><th>Paiement</th><th></th></tr></thead><tbody>
+    ${db.sales.slice().reverse().slice(0, 12).map((s) => `<tr><td>${s.id}</td><td>${new Date(s.date).toLocaleDateString('fr-FR')}</td><td>${esc(C(s.customer).name)}</td><td>${esc(P(s.product).name)}</td><td class="n">${num(s.qty)} ${P(s.product).unit}</td><td class="n">${fcfa(s.total)}</td><td><span class="pill ${s.paid >= s.total ? 'ok' : s.paid ? 'warn' : 'bad'}">${s.paid >= s.total ? 'Payée' : s.paid ? 'Acompte' : 'À crédit'}</span></td><td><button class="btn sm" data-inv="${s.id}">Facture</button></td></tr>`).join('')}</tbody></table></div></div>`;
+  };
+  V.customers = () => {
+    const rem = reminders();
+    return `<h1>Clients</h1><p class="sub">Chaque type de client a ses règles : crédit, plafond, délai, remise.</p>
+    <div class="card"><h2>Clients <span class="muted" style="font-weight:400;font-size:12.5px">${db.customers.length} fiches</span></h2><div class="tbl"><table><thead><tr><th>Client</th><th>Type</th><th class="n">Plafond</th><th class="n">Dette</th><th>Échéance</th><th>Statut</th><th></th></tr></thead><tbody>
+    ${db.customers.map((c) => { const late = c.debt > 0 && c.due && c.due < today(); return `<tr><td><b>${esc(c.name)}</b><br><span class="muted">${c.phone}</span></td><td>${TYPES[c.type].label}</td><td class="n">${c.limit ? fcfa(c.limit) : '—'}</td><td class="n">${fcfa(c.debt)}</td><td>${c.due && c.debt ? new Date(c.due).toLocaleDateString('fr-FR') : '—'}</td><td><span class="pill ${late ? 'bad' : c.debt ? 'warn' : 'ok'}">${late ? 'En retard' : c.debt ? 'Crédit en cours' : 'À jour'}</span></td><td>${c.debt ? `<button class="btn sm" data-pay="${c.id}">Encaisser</button>` : ''}</td></tr>`; }).join('')}
+    </tbody></table></div></div>
+    <div class="card"><h2>Relances préparées automatiquement <span class="pill info">${rem.length}</span></h2>
+    ${rem.map((r, i) => `<div style="border-top:1px solid var(--line);padding:10px 0"><span class="pill ${r.tone}">${esc(r.kind)}</span> <b>${esc(r.c.name)}</b><div class="wa">${esc(r.msg)}</div><button class="btn sm" data-copy="${i}">Copier le message WhatsApp</button></div>`).join('') || '<p class="muted">Aucune relance à faire.</p>'}
+    <p class="muted" style="font-size:12.5px">Dans la démo, rien n’est envoyé : le message est seulement préparé.</p></div>`;
+  };
+  V.stock = () => `<h1>Stock</h1><p class="sub">Un seul catalogue pour la boutique et la gestion : les ventes font baisser le stock toutes seules.</p>
+    <div class="card"><div class="tbl"><table><thead><tr><th>Article</th><th class="n">Prix TTC</th><th class="n">Stock</th><th class="n">Seuil</th><th>État</th></tr></thead><tbody>
+    ${db.products.map((p) => `<tr><td><b>${esc(p.name)}</b></td><td class="n">${fcfa(p.price)}/${p.unit}</td><td class="n">${num(p.stock)} ${p.unit}</td><td class="n">${p.min}</td><td><span class="pill ${p.stock < p.min ? 'bad' : 'ok'}">${p.stock < p.min ? 'À commander' : 'OK'}</span></td></tr>`).join('')}
+    </tbody></table></div></div>
+    <div class="card"><h2>Entrée de stock (réception fournisseur)</h2><form class="grid" id="inForm"><label>Article<select id="i-p">${db.products.map((p) => `<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></label><label>Quantité reçue<input id="i-q" type="number" min="1" value="100"></label><div class="full"><button class="btn primary" type="submit">Enregistrer l’entrée</button></div></form></div>`;
+  V.cash = () => {
+    const tin = db.cash.filter((c) => c.type === 'Entrée').reduce((a, c) => a + c.amount, 0); const tout = db.cash.filter((c) => c.type === 'Sortie').reduce((a, c) => a + c.amount, 0);
+    return `<h1>Caisse</h1><p class="sub">Les encaissements des ventes s’écrivent tout seuls et ne se modifient pas à la main.</p>
+    <div class="kpis"><div class="kpi"><span>Entrées</span><b>${fcfa(tin)}</b></div><div class="kpi"><span>Sorties</span><b>${fcfa(tout)}</b></div><div class="kpi"><span>Solde</span><b>${fcfa(tin - tout)}</b></div><div class="kpi"><span>Mouvements</span><b>${db.cash.length}</b></div></div>
+    <div class="card"><div class="tbl"><table><thead><tr><th>Date</th><th>Libellé</th><th>Moyen</th><th class="n">Montant</th><th>Origine</th></tr></thead><tbody>
+    ${db.cash.slice().reverse().map((c) => `<tr><td>${new Date(c.date).toLocaleDateString('fr-FR')}</td><td>${esc(c.label)}</td><td>${PAY[c.method] || c.method}</td><td class="n" style="color:${c.type === 'Entrée' ? 'var(--ok)' : 'var(--bad)'}">${c.type === 'Entrée' ? '+' : '−'} ${fcfa(c.amount)}</td><td><span class="pill ${c.auto ? 'info' : 'warn'}">${c.auto ? 'Automatique' : 'Saisie manuelle'}</span></td></tr>`).join('')}
+    </tbody></table></div></div>`;
+  };
+  const STEPS = ['Commande', 'Confirmée', 'Préparation', 'En route', 'Livrée'];
+  V.deliveries = () => `<h1>Livraisons</h1><p class="sub">Une livraison ne passe « livrée » qu’avec le code à 4 chiffres reçu par le client. Cinq erreurs bloquent la saisie.</p>
+    ${db.deliveries.slice().reverse().map((d) => { const s = db.sales.find((x) => x.id === d.sale); const locked = d.locked > Date.now();
+      return `<div class="card"><h2>${d.id} · ${esc(C(s.customer).name)} <span class="pill ${d.step === 4 ? 'ok' : 'info'}">${STEPS[d.step]}</span></h2>
+      <p class="muted" style="margin:0 0 8px">${num(s.qty)} ${P(s.product).unit} ${esc(P(s.product).name)} · ${esc(d.site)} · vente ${s.id}</p>
+      <div class="steps">${STEPS.map((x, i) => `<span class="${i <= d.step ? 'on' : ''}">${x}</span>`).join('')}</div>
+      ${d.step < 3 ? `<p><button class="btn sm" data-adv="${d.id}">Passer à « ${STEPS[d.step + 1]} »</button></p>` : ''}
+      ${d.step === 3 ? `<form class="ask" data-code="${d.id}" style="margin-top:10px;max-width:420px"><input inputmode="numeric" maxlength="4" placeholder="Code donné par le client" ${locked ? 'disabled' : ''}><button class="btn primary" ${locked ? 'disabled' : ''}>Valider la remise</button></form>
+        <p class="muted" style="font-size:12.5px">Démo : le client a reçu le code <b>${d.code}</b> par WhatsApp.${locked ? ' Saisie bloquée 15 minutes après 5 erreurs.' : d.tries ? ` Erreurs : ${d.tries}/5.` : ''}</p>` : ''}</div>`; }).join('')}`;
+  V.copilot = () => `<h1>Copilote</h1><p class="sub">Questions en langage courant sur les données. Démo hors ligne : les réponses sont calculées dans le navigateur, sans modèle d’IA. Toute action demande une confirmation.</p>
+    <div class="card"><div class="chat" id="chat">${chatLog.map((m) => `<div class="bubble ${m.me ? 'me' : 'ai'}">${m.html}</div>`).join('')}</div>
+    <div class="chips">${['Point du jour', 'Qui doit le plus ?', 'Quels articles commander ?', 'Ventes de la semaine', 'Crée une vente de 10 t de Basalte 3/8 pour Chantier Horizon'].map((q) => `<button type="button" data-q="${esc(q)}">${esc(q)}</button>`).join('')}</div>
+    <form class="ask" id="askForm"><input id="askIn" placeholder="Votre question…" autocomplete="off"><button class="btn dark">Envoyer</button></form></div>`;
+
+  function render() { nav(); $('#view').innerHTML = V[view](); after(); renderJournal(); }
+
+  // ── Interactions ──────────────────────────────────────────────────────────
+  function after() {
+    if (view === 'sales') {
+      const upd = () => { const c = C($('#f-c').value), p = P($('#f-p').value), q = +$('#f-q').value || 0, pay = $('#f-pay').value;
+        $('#f-paid-l').hidden = pay !== 'credit'; const remise = TYPES[c.type].remise || 0; const total = q * p.price * (1 - remise / 100);
+        $('#f-total').textContent = fcfa(total); $('#f-detail').textContent = `${num(q)} ${p.unit} × ${fcfa(p.price)}${remise ? ` − remise revendeur ${remise} %` : ''}`;
+        const paid = pay === 'credit' ? Math.min(+$('#f-paid').value || 0, total) : total; const r = saleCheck(c, total, paid);
+        $('#f-msg').innerHTML = r.block ? `<div class="msg bad">⛔ ${esc(r.block)}</div>` : r.warn ? `<div class="msg warn">⚠️ ${esc(r.warn)}</div>` : q > p.stock ? `<div class="msg bad">⛔ Stock insuffisant : ${num(p.stock)} ${p.unit} disponibles.</div>` : '';
+        return { c, p, q, pay, total, paid, block: r.block || q > p.stock || q <= 0 };
+      };
+      ['#f-c', '#f-p', '#f-q', '#f-pay', '#f-paid'].forEach((s) => $(s).addEventListener('input', upd)); upd();
+      $('#saleForm').addEventListener('submit', (e) => { e.preventDefault(); const v = upd(); if (v.block) return; createSale(v); });
+    }
+    if (view === 'stock') $('#inForm').addEventListener('submit', (e) => { e.preventDefault(); const p = P($('#i-p').value), q = +$('#i-q').value; if (!(q > 0)) return; p.stock += q; save(); log(`Entrée de stock : +${num(q)} ${p.unit} ${p.name}`, [`Stock ${p.name} : ${num(p.stock)} ${p.unit}`, p.stock >= p.min ? 'Alerte de réapprovisionnement levée' : 'Toujours sous le seuil']); render(); });
+    if (view === 'copilot') { $('#askForm').addEventListener('submit', (e) => { e.preventDefault(); const q = $('#askIn').value.trim(); if (q) { $('#askIn').value = ''; ask(q); } }); }
+  }
+  function createSale({ c, p, q, pay, total, paid }) {
+    const id = 'V-' + db.seq++; const s = { id, date: today(), customer: c.id, product: p.id, qty: q, total, paid, pay }; db.sales.push(s);
+    p.stock -= q; const fx = [`Stock ${p.name} : ${num(p.stock + q)} → ${num(p.stock)} ${p.unit}${p.stock < p.min ? ' (sous le seuil : à commander)' : ''}`];
+    if (paid > 0) { db.cash.push({ id: uid('E'), date: today(), type: 'Entrée', label: 'Encaissement ' + id, method: pay === 'credit' ? 'cash' : pay, amount: paid, auto: true }); fx.push(`Caisse : + ${fcfa(paid)} (${pay === 'credit' ? 'acompte' : PAY[pay]})`); }
+    if (total - paid > 0) { c.debt += total - paid; if (!c.due) { const d = new Date(); d.setDate(d.getDate() + TYPES[c.type].delai); c.due = d.toISOString().slice(0, 10); } fx.push(`Compte ${c.name} : dette ${fcfa(c.debt)}, échéance ${new Date(c.due).toLocaleDateString('fr-FR')}`); }
+    else fx.push(`Compte ${c.name} : soldé`);
+    const code = String(1000 + Math.floor(Math.random() * 9000)); db.deliveries.push({ id: 'L-' + (300 + db.deliveries.length + 1), sale: id, site: 'Chantier du client', step: 1, code, tries: 0, locked: 0 });
+    fx.push(`Livraison créée, code de remise envoyé au client : ${code}`); fx.push('Tableau de bord mis à jour');
+    c.inactive = 0; save(); log(`Vente ${id} : ${num(q)} ${p.unit} ${p.name} · ${fcfa(total)}`, fx); render();
+  }
+  document.addEventListener('click', (e) => {
+    const t = e.target.closest('button'); if (!t) return;
+    if (t.dataset.go) { view = t.dataset.go; history.replaceState(null, '', '#' + view); render(); }
+    if (t.dataset.pay) { const c = C(t.dataset.pay); const amt = c.debt; c.debt = 0; c.due = null; db.cash.push({ id: uid('E'), date: today(), type: 'Entrée', label: 'Règlement ' + c.name, method: 'wave', amount: amt, auto: true }); save(); log(`Règlement de ${c.name} : ${fcfa(amt)}`, ['Caisse : + ' + fcfa(amt) + ' (Wave)', `Compte ${c.name} : soldé`, 'Relances de ce client fermées toutes seules']); render(); }
+    if (t.dataset.copy !== undefined) { const r = reminders()[+t.dataset.copy]; const done = () => { t.textContent = 'Copié ✓'; }; if (navigator.clipboard) navigator.clipboard.writeText(r.msg).then(done, () => {}); }
+    if (t.dataset.adv) { const d = db.deliveries.find((x) => x.id === t.dataset.adv); d.step++; save(); log(`${d.id} : ${STEPS[d.step]}`, d.step === 3 ? ['WhatsApp au client : « Votre camion est en route »', 'Lien de suivi en direct envoyé'] : ['Client informé par WhatsApp']); render(); }
+    if (t.dataset.inv) invoice(db.sales.find((x) => x.id === t.dataset.inv));
+    if (t.dataset.q) ask(t.dataset.q);
+    if (t.dataset.confirm) { chatLog.forEach((m) => { m.html = m.html.replace(/data-confirm="(yes|no)"/g, 'disabled data-done="$1"'); }); const v = pending; pending = null; t.closest('.bubble').querySelectorAll('button').forEach((b) => (b.disabled = true)); if (t.dataset.confirm === 'yes' && v) { createSale(v); view = 'copilot'; render(); say(`C’est fait : vente enregistrée. Regardez le journal à droite : stock, caisse et compte client sont à jour.`); } else say('D’accord, rien n’est enregistré.'); }
+    if (t.id === 'closeInv') $('#modal').innerHTML = '';
+  });
+  document.addEventListener('submit', (e) => {
+    const f = e.target.closest('[data-code]'); if (!f) return; e.preventDefault();
+    const d = db.deliveries.find((x) => x.id === f.dataset.code); const v = f.querySelector('input').value.trim();
+    if (v === d.code) { d.step = 4; save(); log(`${d.id} livrée`, ['Code de remise vérifié', 'Vente marquée « livrée »', 'Client informé par WhatsApp']); }
+    else { d.tries++; if (d.tries >= 5) { d.locked = Date.now() + 15 * 60000; d.tries = 0; log(`${d.id} : saisie bloquée`, ['5 codes faux : saisie bloquée 15 minutes', 'Le gérant peut clôturer à la main avec un motif écrit']); } else save(); }
+    render();
+  });
+  $('#reset').addEventListener('click', () => { db = seed(); save(); render(); });
+  $('#modal').addEventListener('click', (e) => { if (e.target.id === 'modal' || e.target.classList.contains('modal')) $('#modal').innerHTML = ''; });
+
+  function invoice(s) {
+    const c = C(s.customer), p = P(s.product); const ht = s.total / 1.18;
+    $('#modal').innerHTML = `<div class="modal"><div class="sheet" role="dialog" aria-label="Facture ${s.id}"><div style="display:flex;justify-content:space-between;gap:12px"><div><h3>BTP Démo SARL</h3><p style="color:#586179;margin:2px 0 0">Entreprise fictive · Dakar</p></div><div style="text-align:right"><b>FACTURE ${s.id.replace('V', 'F')}</b><br><span style="color:#586179">${new Date(s.date).toLocaleDateString('fr-FR')}</span></div></div>
+    <p style="margin:18px 0 8px"><b>Client :</b> ${esc(c.name)} · ${c.phone}</p>
+    <table><thead><tr><th>Article</th><th class="n">Qté</th><th class="n">PU TTC</th><th class="n">Total TTC</th></tr></thead><tbody><tr><td>${esc(p.name)}</td><td class="n">${num(s.qty)} ${p.unit}</td><td class="n">${fcfa(p.price)}</td><td class="n">${fcfa(s.total)}</td></tr></tbody></table>
+    <p style="text-align:right;margin:12px 0 0">Total HT : ${fcfa(ht)}<br>TVA 18 % : ${fcfa(s.total - ht)}<br><b style="font-size:16px">Total TTC : ${fcfa(s.total)}</b><br>Payé : ${fcfa(s.paid)} · Reste : ${fcfa(s.total - s.paid)}</p>
+    <p style="text-align:right;margin-top:18px"><button class="btn dark" id="closeInv">Fermer</button></p></div></div>`;
+  }
+
+  // ── Copilote (hors ligne, sur les données de la démo) ─────────────────────
+  let pending = null;
+  function say(html, isMe) { chatLog.push({ html: html.replace(/data-confirm=/g, pending || !isMe ? 'data-confirm=' : 'data-x='), me: !!isMe }); const ch = $('#chat'); if (!ch) return; const d = document.createElement('div'); d.className = 'bubble ' + (isMe ? 'me' : 'ai'); d.innerHTML = html; ch.appendChild(d); ch.scrollTop = ch.scrollHeight; }
+  function ask(q) {
+    if (view !== 'copilot') { view = 'copilot'; render(); }
+    say(esc(q), true); const n = q.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    const s = stats();
+    let m = n.match(/(?:cree|creer|fais|enregistre).*?(\d+(?:[.,]\d+)?)\s*(?:t|tonnes?|sacs?)?\s*(?:de\s+)?(.+?)\s+pour\s+(.+)$/);
+    if (m) {
+      const q2 = parseFloat(m[1].replace(',', '.')); const p = db.products.find((x) => m[2].includes(x.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').split(' (')[0]));
+      const c = db.customers.find((x) => m[3].includes(x.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ \(demo\)/, '')));
+      if (!p || !c) return say('Je n’ai pas trouvé l’article ou le client. Exemple : « Crée une vente de 10 t de Basalte 3/8 pour Chantier Horizon ».');
+      const total = q2 * p.price * (1 - (TYPES[c.type].remise || 0) / 100); const r = saleCheck(c, total, total);
+      if (r.block || q2 > p.stock) return say('⛔ ' + esc(r.block || 'Stock insuffisant.'));
+      pending = { c, p, q: q2, pay: 'cash', total, paid: total };
+      return say(`Je prépare cette vente : <b>${num(q2)} ${p.unit} ${esc(p.name)}</b> pour <b>${esc(c.name)}</b>, ${fcfa(total)} payés en espèces.<br><b>Rien n’est enregistré tant que vous ne confirmez pas.</b><div class="chips"><button class="btn sm primary" data-confirm="yes">Confirmer</button><button class="btn sm" data-confirm="no">Annuler</button></div>`);
+    }
+    if (/point|jour|aujourd/.test(n)) return say(`<b>Point du jour</b><br>Ventes : ${fcfa(s.ca)} (${num(s.tons)} t) · encaissé : ${fcfa(s.cashIn)}<br>Reste à encaisser : ${fcfa(s.due)}<br>${s.low.length ? `À commander : ${s.low.map((p) => esc(p.name)).join(', ')}` : 'Aucun article sous le seuil'}<br>Relances prêtes : ${reminders().length}`);
+    if (/doit|dette|impaye|creance/.test(n)) { const l = db.customers.filter((c) => c.debt).sort((a, b) => b.debt - a.debt); return say(l.length ? '<b>Clients qui doivent</b><br>' + l.map((c) => `${esc(c.name)} : ${fcfa(c.debt)}${c.due < today() ? ' <span class="pill bad">en retard</span>' : ''}`).join('<br>') : 'Aucun client ne doit d’argent.'); }
+    if (/command|stock|seuil|rupture/.test(n)) return say(s.low.length ? '<b>Articles à commander</b><br>' + s.low.map((p) => `${esc(p.name)} : ${num(p.stock)} ${p.unit} (seuil ${p.min}), commander environ ${num(p.min * 2 - p.stock)} ${p.unit}`).join('<br>') : 'Tout le stock est au-dessus des seuils.');
+    if (/semaine|7 jours|ventes/.test(n)) { const t = db.sales.filter((x) => x.date >= daysAgo(6)); const tot = t.reduce((a, x) => a + x.total, 0); const best = db.products.map((p) => [p, t.filter((x) => x.product === p.id).reduce((a, x) => a + x.total, 0)]).sort((a, b) => b[1] - a[1])[0]; return say(`<b>7 derniers jours</b><br>${t.length} ventes · ${fcfa(tot)}<br>Article le plus vendu : ${esc(best[0].name)} (${fcfa(best[1])})`); }
+    say('Je réponds dans cette démo au point du jour, aux dettes clients, au stock à commander, aux ventes de la semaine, et je peux préparer une vente (à confirmer).');
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>
